@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1e5631">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="বাসার খরচ">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<title>বাসার খরচ — Bashar Khoroch</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Noto Sans Bengali", sans-serif; background: #f4f6f3; color: #1c2b1f; padding-bottom: 40px; }
+  header { background: #1e5631; color: #fff; padding: 18px 16px 14px; }
+  header h1 { font-size: 22px; }
+  header p { opacity: .85; font-size: 13px; margin-top: 2px; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 0 14px; }
+  .summary { display: flex; gap: 10px; margin-top: 14px; }
+  .card { background: #fff; border-radius: 12px; padding: 14px; flex: 1; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  .card .label { font-size: 12px; color: #666; }
+  .card .value { font-size: 22px; font-weight: 700; margin-top: 4px; }
+  .green { color: #1e7d32; } .amber { color: #b26a00; }
+  .tabs { display: flex; gap: 8px; margin: 16px 0 12px; }
+  .tabs button { flex: 1; padding: 11px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; background: #e3e8e3; color: #333; cursor: pointer; }
+  .tabs button.active { background: #1e5631; color: #fff; }
+  .monthrow { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .monthrow input[type="month"] { flex: 1; padding: 9px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; }
+  form { background: #fff; border-radius: 12px; padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 14px; }
+  form .row { display: flex; gap: 8px; margin-bottom: 8px; }
+  form input, form select { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; min-width: 0; }
+  form button { width: 100%; padding: 11px; border: none; border-radius: 8px; background: #1e5631; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; }
+  form button.cancel { background: #888; margin-top: 6px; }
+  h2 { font-size: 16px; margin: 16px 0 8px; }
+  .breakdown { background: #fff; border-radius: 12px; padding: 6px 14px; box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 14px; }
+  .breakdown .brow { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 14px; }
+  .breakdown .brow:last-child { border-bottom: none; }
+  .item { background: #fff; border-radius: 12px; padding: 12px 14px; box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 8px; }
+  .item .top { display: flex; justify-content: space-between; align-items: baseline; }
+  .item .amt { font-weight: 700; font-size: 17px; }
+  .item .meta { font-size: 13px; color: #666; margin-top: 3px; }
+  .item .note { font-size: 14px; margin-top: 4px; }
+  .item .actions { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .item .actions button { padding: 6px 12px; border: none; border-radius: 7px; font-size: 13px; cursor: pointer; background: #eef2ee; }
+  .item .actions button.danger { background: #fde8e8; color: #b00020; }
+  .item .actions button.pay { background: #e6f4ea; color: #1e7d32; }
+  .paybox { display: flex; gap: 6px; margin-top: 8px; }
+  .paybox input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 7px; font-size: 14px; }
+  .paybox button { padding: 8px 14px; border: none; border-radius: 7px; background: #1e7d32; color: #fff; font-size: 14px; cursor: pointer; }
+  .empty { text-align: center; color: #888; padding: 24px 0; font-size: 14px; }
+  .seg { display: flex; gap: 6px; margin-bottom: 8px; }
+  .seg button { flex: 1; padding: 9px; border: 1px solid #ccc; border-radius: 8px; background: #fff; font-size: 14px; cursor: pointer; }
+  .seg button.on { background: #1e5631; color: #fff; border-color: #1e5631; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>🏠 বাসার খরচ</h1>
+    <p>বাজার, খাওয়া, বুয়া, বিল — আর ধার-বাকির হিসাব</p>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="summary">
+    <div class="card"><div class="label">এই মাসের খরচ</div><div class="value" id="monthTotal">৳০</div></div>
+    <div class="card"><div class="label">পাবো (সবুজ)</div><div class="value green" id="totalPabo">৳০</div></div>
+    <div class="card"><div class="label">দিতে হবে</div><div class="value amber" id="totalDiteHobe">৳০</div></div>
+  </div>
+
+  <div class="tabs">
+    <button id="tabExp" class="active" onclick="showTab('exp')">💸 খরচ</button>
+    <button id="tabLoan" onclick="showTab('loan')">🤝 ধার / বাকি</button>
+  </div>
+
+  <!-- ======= খরচ ======= -->
+  <div id="expView">
+    <div class="monthrow">
+      <input type="month" id="monthPicker">
+    </div>
+    <form id="expForm" onsubmit="saveExpense(event)">
+      <div class="row">
+        <input type="number" id="expAmount" placeholder="টাকা (৳)" min="1" required>
+        <select id="expCat">
+          <option>বাজার</option><option>খাওয়া-দাওয়া</option><option>বুয়া</option>
+          <option>WiFi Bill</option><option>ময়লা বিল</option><option>গ্যাস</option>
+          <option>Current</option><option>বাসা ভাড়া</option><option>অন্যান্য</option>
+        </select>
+      </div>
+      <div class="row">
+        <input type="date" id="expDate" required>
+        <input type="text" id="expNote" placeholder="নোট (ঐচ্ছিক)">
+      </div>
+      <button type="submit" id="expSubmit">খরচ যোগ করো</button>
+      <button type="button" class="cancel hidden" id="expCancel" onclick="cancelExpEdit()">বাতিল</button>
+    </form>
+
+    <h2>ক্যাটাগরি অনুযায়ী</h2>
+    <div class="breakdown" id="breakdown"></div>
+
+    <h2>খরচের তালিকা</h2>
+    <div id="expList"></div>
+  </div>
+
+  <!-- ======= ধার / বাকি ======= -->
+  <div id="loanView" class="hidden">
+    <form id="loanForm" onsubmit="saveLoan(event)">
+      <div class="row">
+        <input type="text" id="loanPerson" placeholder="কার নামে? (যেমন: রহিম)" required>
+        <input type="number" id="loanAmount" placeholder="টাকা (৳)" min="1" required>
+      </div>
+      <div class="seg">
+        <button type="button" id="segPabo" class="on" onclick="setLoanType('pabo')">আমি পাবো (ধার দিলাম)</button>
+        <button type="button" id="segDite" onclick="setLoanType('dite')">আমাকে দিতে হবে (ধার নিলাম)</button>
+      </div>
+      <div class="row">
+        <input type="date" id="loanDate" required>
+        <input type="text" id="loanNote" placeholder="নোট (ঐচ্ছিক)">
+      </div>
+      <button type="submit">ধার যোগ করো</button>
+    </form>
+
+    <h2>ধার / বাকির তালিকা</h2>
+    <div id="loanList"></div>
+  </div>
+</div>
+
+<script>
+const CATS = ["বাজার","খাওয়া-দাওয়া","বুয়া","WiFi Bill","ময়লা বিল","গ্যাস","Current","বাসা ভাড়া","অন্যান্য"];
+let expenses = JSON.parse(localStorage.getItem("bk_expenses") || "[]");
+let loans = JSON.parse(localStorage.getItem("bk_loans") || "[]");
+let loanType = "pabo";
+let editingExp = null;
+
+const fmt = n => "৳" + Number(n).toLocaleString("en-IN");
+const today = () => new Date().toISOString().slice(0, 10);
+const thisMonth = () => today().slice(0, 7);
+
+document.getElementById("expDate").value = today();
+document.getElementById("loanDate").value = today();
+document.getElementById("monthPicker").value = thisMonth();
+document.getElementById("monthPicker").addEventListener("change", render);
+
+function persist() {
+  localStorage.setItem("bk_expenses", JSON.stringify(expenses));
+  localStorage.setItem("bk_loans", JSON.stringify(loans));
+}
+
+function showTab(t) {
+  document.getElementById("tabExp").classList.toggle("active", t === "exp");
+  document.getElementById("tabLoan").classList.toggle("active", t === "loan");
+  document.getElementById("expView").classList.toggle("hidden", t !== "exp");
+  document.getElementById("loanView").classList.toggle("hidden", t !== "loan");
+}
+
+function setLoanType(t) {
+  loanType = t;
+  document.getElementById("segPabo").classList.toggle("on", t === "pabo");
+  document.getElementById("segDite").classList.toggle("on", t === "dite");
+}
+
+/* ---------- খরচ ---------- */
+function saveExpense(e) {
+  e.preventDefault();
+  const amount = +document.getElementById("expAmount").value;
+  const cat = document.getElementById("expCat").value;
+  const date = document.getElementById("expDate").value;
+  const note = document.getElementById("expNote").value.trim();
+  if (editingExp) {
+    Object.assign(editingExp, { amount, cat, date, note });
+    editingExp = null;
+    document.getElementById("expSubmit").textContent = "খরচ যোগ করো";
+    document.getElementById("expCancel").classList.add("hidden");
+  } else {
+    expenses.unshift({ id: Date.now(), amount, cat, date, note });
+  }
+  e.target.reset();
+  document.getElementById("expDate").value = today();
+  persist(); render();
+}
+function editExpense(id) {
+  const x = expenses.find(v => v.id === id); if (!x) return;
+  editingExp = x;
+  document.getElementById("expAmount").value = x.amount;
+  document.getElementById("expCat").value = x.cat;
+  document.getElementById("expDate").value = x.date;
+  document.getElementById("expNote").value = x.note || "";
+  document.getElementById("expSubmit").textContent = "আপডেট করো";
+  document.getElementById("expCancel").classList.remove("hidden");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+function cancelExpEdit() {
+  editingExp = null;
+  document.getElementById("expForm").reset();
+  document.getElementById("expDate").value = today();
+  document.getElementById("expSubmit").textContent = "খরচ যোগ করো";
+  document.getElementById("expCancel").classList.add("hidden");
+}
+function deleteExpense(id) {
+  if (!confirm("এই খরচটা মুছে ফেলবো?")) return;
+  expenses = expenses.filter(v => v.id !== id);
+  persist(); render();
+}
+
+/* ---------- ধার / বাকি ---------- */
+function saveLoan(e) {
+  e.preventDefault();
+  loans.unshift({
+    id: Date.now(),
+    person: document.getElementById("loanPerson").value.trim(),
+    amount: +document.getElementById("loanAmount").value,
+    type: loanType,
+    date: document.getElementById("loanDate").value,
+    note: document.getElementById("loanNote").value.trim(),
+    paid: 0
+  });
+  e.target.reset();
+  document.getElementById("loanDate").value = today();
+  setLoanType("pabo");
+  persist(); render();
+}
+function addPayment(id) {
+  const input = document.getElementById("pay-" + id);
+  const amt = +input.value;
+  const loan = loans.find(v => v.id === id);
+  if (!loan || !amt || amt <= 0) return;
+  loan.paid = Math.min(loan.amount, loan.paid + amt);
+  persist(); render();
+}
+function deleteLoan(id) {
+  if (!confirm("এই ধারের হিসাবটা মুছে ফেলবো?")) return;
+  loans = loans.filter(v => v.id !== id);
+  persist(); render();
+}
+
+/* ---------- রেন্ডার ---------- */
+function render() {
+  const month = document.getElementById("monthPicker").value || thisMonth();
+  const monthExp = expenses.filter(v => v.date.slice(0, 7) === month);
+  const total = monthExp.reduce((s, v) => s + v.amount, 0);
+  document.getElementById("monthTotal").textContent = fmt(total);
+
+  // ক্যাটাগরি breakdown
+  const bd = document.getElementById("breakdown");
+  const byCat = {};
+  monthExp.forEach(v => byCat[v.cat] = (byCat[v.cat] || 0) + v.amount);
+  const rows = CATS.filter(c => byCat[c]).map(c =>
+    `<div class="brow"><span>${c}</span><b>${fmt(byCat[c])}</b></div>`).join("");
+  bd.innerHTML = rows || `<div class="empty">এই মাসে এখনো কোনো খরচ নেই</div>`;
+
+  // খরচের তালিকা
+  const el = document.getElementById("expList");
+  el.innerHTML = monthExp.length ? monthExp.map(v => `
+    <div class="item">
+      <div class="top"><span>${v.cat}</span><span class="amt">${fmt(v.amount)}</span></div>
+      <div class="meta">${v.date}</div>
+      ${v.note ? `<div class="note">${v.note}</div>` : ""}
+      <div class="actions">
+        <button onclick="editExpense(${v.id})">✏️ এডিট</button>
+        <button class="danger" onclick="deleteExpense(${v.id})">🗑️ মুছো</button>
+      </div>
+    </div>`).join("") : `<div class="empty">এই মাসে এখনো কোনো খরচ নেই</div>`;
+
+  // ধার / বাকি
+  const pabo = loans.filter(v => v.type === "pabo").reduce((s, v) => s + (v.amount - v.paid), 0);
+  const dite = loans.filter(v => v.type === "dite").reduce((s, v) => s + (v.amount - v.paid), 0);
+  document.getElementById("totalPabo").textContent = fmt(pabo);
+  document.getElementById("totalDiteHobe").textContent = fmt(dite);
+
+  const ll = document.getElementById("loanList");
+  ll.innerHTML = loans.length ? loans.map(v => {
+    const rem = v.amount - v.paid;
+    return `<div class="item">
+      <div class="top"><span>${v.person} ${v.type === "pabo" ? "— আমি পাবো" : "— দিতে হবে"}</span>
+        <span class="amt ${v.type === "pabo" ? "green" : "amber"}">${fmt(rem)} বাকি</span></div>
+      <div class="meta">মোট ${fmt(v.amount)} · পরিশোধ ${fmt(v.paid)} · ${v.date}</div>
+      ${v.note ? `<div class="note">${v.note}</div>` : ""}
+      ${rem > 0 ? `<div class="paybox">
+        <input type="number" id="pay-${v.id}" placeholder="পরিশোধের টাকা" min="1">
+        <button onclick="addPayment(${v.id})">পরিশোধ যোগ করো</button>
+      </div>` : `<div class="note" style="color:#1e7d32;font-weight:600">✅ সম্পূর্ণ পরিশোধ হয়েছে</div>`}
+      <div class="actions"><button class="danger" onclick="deleteLoan(${v.id})">🗑️ মুছো</button></div>
+    </div>`;
+  }).join("") : `<div class="empty">এখনো কোনো ধার-বাকি নেই</div>`;
+}
+render();
+</script>
+<div class="wrap"><p style="text-align:center;color:#888;font-size:12px;margin-top:18px">iPhone-এ অ্যাপ হিসেবে বসাতে: Safari দিয়ে খুলে Share → Add to Home Screen</p></div>
+<script>
+if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js"); }
+</script>
+</body>
+</html>

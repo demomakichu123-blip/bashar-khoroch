@@ -1,0 +1,26 @@
+{
+  "name": "bashar-khoroch",
+  "version": "1.0.0",
+  "description": "বাসার সব খরচ আর ধার-বাকির হিসাব রাখার অ্যাপ। একটাই ফাইল — কোনো সার্ভার লাগে না।",
+  "main": "sw.js",
+  "scripts": {
+    "build": "mkdir -p www && cp index.html manifest.json sw.js icon-180.png icon-192.png icon-512.png www/",
+    "sync": "npm run build && npx cap sync ios"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/demomakichu123-blip/bashar-khoroch.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/demomakichu123-blip/bashar-khoroch/issues"
+  },
+  "homepage": "https://github.com/demomakichu123-blip/bashar-khoroch#readme",
+  "dependencies": {
+    "@capacitor/cli": "^8.6.2",
+    "@capacitor/core": "^8.6.2",
+    "@capacitor/ios": "^8.6.2"
+  }
+}

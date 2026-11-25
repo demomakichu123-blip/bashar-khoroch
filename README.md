@@ -23,6 +23,17 @@ App Store লাগবে না — এটা PWA (home screen app):
 
 Android-এও একইভাবে Chrome → Add to Home screen।
 
+## আসল iOS অ্যাপ (Capacitor — Mac লাগবে)
+
+`ios/` ফোল্ডারে আসল native iOS প্রজেক্ট আছে (Capacitor 8, app id `com.basharkhoroch.app`) — এটাই iPhone-এর আসল অ্যাপ।
+
+Mac + Xcode থাকলে:
+1. Repo clone করো, `npm install` দাও
+2. `npm run sync` দাও (ওয়েব ফাইলগুলো iOS প্রজেক্টে কপি হবে)
+3. `ios/App/App.xcworkspace` খুলে iPhone কানেক্ট করে **Run** চাপো
+
+নোট: `.ipa` ফাইল শুধু Mac-এ Xcode দিয়ে বানানো যায় — এই Linux মেশিনে বানানো যায় না। ওয়েব অ্যাপে কিছু বদলালে root-এর ফাইল বদলে `npm run sync` দিয়ে আবার sync করো।
+
 ## চালানো (কম্পিউটারে)
 
 `index.html` ফাইলটা ব্রাউজারে খুললেই হবে।
