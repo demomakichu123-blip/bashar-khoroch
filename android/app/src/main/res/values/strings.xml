@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Bashar Khoroch</string>
+    <string name="title_activity_main">Bashar Khoroch</string>
+    <string name="package_name">com.basharkhoroch.app</string>
+    <string name="custom_url_scheme">com.basharkhoroch.app</string>
+</resources>
