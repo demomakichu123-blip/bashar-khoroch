@@ -13,7 +13,17 @@
   - "পাবো" (সবুজ) আর "দিতে হবে" আলাদা মোট
 - সব ডেটা ব্রাউজারের localStorage-এ থাকে — পেজ রিফ্রেশ করলেও মুছে না
 
-## চালানো
+## iPhone-এ অ্যাপ হিসেবে বসানো
+
+App Store লাগবে না — এটা PWA (home screen app):
+
+1. iPhone-এ **Safari** দিয়ে খুলো: https://demomakichu123-blip.github.io/bashar-khoroch/
+2. নিচের **Share** বোতাম → **Add to Home Screen**
+3. Home screen-এ সবুজ ৳ আইকন আসবে — ওটা খুললেই ফুলস্ক্রিন অ্যাপের মতো চলবে, অফলাইনেও খুলবে
+
+Android-এও একইভাবে Chrome → Add to Home screen।
+
+## চালানো (কম্পিউটারে)
 
 `index.html` ফাইলটা ব্রাউজারে খুললেই হবে।
 
