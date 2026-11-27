@@ -20,8 +20,8 @@
   header h1 { font-size: 22px; }
   header p { opacity: .85; font-size: 13px; margin-top: 2px; }
   .wrap { max-width: 640px; margin: 0 auto; padding: 0 14px; }
-  .summary { display: flex; gap: 10px; margin-top: 14px; }
-  .card { background: #fff; border-radius: 12px; padding: 14px; flex: 1; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  .summary { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .card { background: #fff; border-radius: 12px; padding: 14px; flex: 1; min-width: 140px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
   .card .label { font-size: 12px; color: #666; }
   .card .value { font-size: 22px; font-weight: 700; margin-top: 4px; }
   .green { color: #1e7d32; } .amber { color: #b26a00; }
@@ -62,7 +62,7 @@
 <header>
   <div class="wrap">
     <h1>🏠 বাসার খরচ</h1>
-    <p>বাজার, খাওয়া, বুয়া, বিল — আর ধার-বাকির হিসাব</p>
+    <p>বাজার, খাওয়া, বুয়া, বিল — ধার-বাকি আর জমার হিসাব</p>
   </div>
 </header>
 
@@ -71,11 +71,13 @@
     <div class="card"><div class="label">এই মাসের খরচ</div><div class="value" id="monthTotal">৳০</div></div>
     <div class="card"><div class="label">পাবো (সবুজ)</div><div class="value green" id="totalPabo">৳০</div></div>
     <div class="card"><div class="label">দিতে হবে</div><div class="value amber" id="totalDiteHobe">৳০</div></div>
+    <div class="card"><div class="label">আমার কাছে জমা</div><div class="value" id="totalJoma" style="color:#1a5276">৳০</div></div>
   </div>
 
   <div class="tabs">
     <button id="tabExp" class="active" onclick="showTab('exp')">💸 খরচ</button>
     <button id="tabLoan" onclick="showTab('loan')">🤝 ধার / বাকি</button>
+    <button id="tabJoma" onclick="showTab('joma')">🏦 জমা</button>
   </div>
 
   <!-- ======= খরচ ======= -->
@@ -128,12 +130,34 @@
     <h2>ধার / বাকির তালিকা</h2>
     <div id="loanList"></div>
   </div>
+
+  <!-- ======= জমা (আমার কাছে রাখা টাকা) ======= -->
+  <div id="jomaView" class="hidden">
+    <form id="jomaForm" onsubmit="saveDeposit(event)">
+      <div class="row">
+        <input type="text" id="jomaPerson" placeholder="কে টাকা রাখলো? (যেমন: রহিম)" required>
+        <input type="number" id="jomaAmount" placeholder="টাকা (৳)" min="1" required>
+      </div>
+      <div class="row">
+        <input type="date" id="jomaDate" required>
+        <input type="text" id="jomaNote" placeholder="নোট (ঐচ্ছিক)">
+      </div>
+      <button type="submit">জমা যোগ করো</button>
+    </form>
+
+    <h2>জমার হিসাব</h2>
+    <div class="breakdown" id="jomaTotals"></div>
+
+    <h2>জমার তালিকা</h2>
+    <div id="jomaList"></div>
+  </div>
 </div>
 
 <script>
 const CATS = ["বাজার","খাওয়া-দাওয়া","বুয়া","WiFi Bill","ময়লা বিল","গ্যাস","Current","বাসা ভাড়া","অন্যান্য"];
 let expenses = JSON.parse(localStorage.getItem("bk_expenses") || "[]");
 let loans = JSON.parse(localStorage.getItem("bk_loans") || "[]");
+let deposits = JSON.parse(localStorage.getItem("bk_joma") || "[]");
 let loanType = "pabo";
 let editingExp = null;
 
@@ -143,19 +167,23 @@ const thisMonth = () => today().slice(0, 7);
 
 document.getElementById("expDate").value = today();
 document.getElementById("loanDate").value = today();
+document.getElementById("jomaDate").value = today();
 document.getElementById("monthPicker").value = thisMonth();
 document.getElementById("monthPicker").addEventListener("change", render);
 
 function persist() {
   localStorage.setItem("bk_expenses", JSON.stringify(expenses));
   localStorage.setItem("bk_loans", JSON.stringify(loans));
+  localStorage.setItem("bk_joma", JSON.stringify(deposits));
 }
 
 function showTab(t) {
   document.getElementById("tabExp").classList.toggle("active", t === "exp");
   document.getElementById("tabLoan").classList.toggle("active", t === "loan");
+  document.getElementById("tabJoma").classList.toggle("active", t === "joma");
   document.getElementById("expView").classList.toggle("hidden", t !== "exp");
   document.getElementById("loanView").classList.toggle("hidden", t !== "loan");
+  document.getElementById("jomaView").classList.toggle("hidden", t !== "joma");
 }
 
 function setLoanType(t) {
@@ -238,6 +266,35 @@ function deleteLoan(id) {
   persist(); render();
 }
 
+/* ---------- জমা (আমার কাছে রাখা টাকা) ---------- */
+function saveDeposit(e) {
+  e.preventDefault();
+  deposits.unshift({
+    id: Date.now(),
+    person: document.getElementById("jomaPerson").value.trim(),
+    amount: +document.getElementById("jomaAmount").value,
+    date: document.getElementById("jomaDate").value,
+    note: document.getElementById("jomaNote").value.trim(),
+    returned: 0
+  });
+  e.target.reset();
+  document.getElementById("jomaDate").value = today();
+  persist(); render();
+}
+function addReturn(id) {
+  const input = document.getElementById("ret-" + id);
+  const amt = +input.value;
+  const d = deposits.find(v => v.id === id);
+  if (!d || !amt || amt <= 0) return;
+  d.returned = Math.min(d.amount, d.returned + amt);
+  persist(); render();
+}
+function deleteDeposit(id) {
+  if (!confirm("এই জমার হিসাবটা মুছে ফেলবো?")) return;
+  deposits = deposits.filter(v => v.id !== id);
+  persist(); render();
+}
+
 /* ---------- রেন্ডার ---------- */
 function render() {
   const month = document.getElementById("monthPicker").value || thisMonth();
@@ -287,6 +344,32 @@ function render() {
       <div class="actions"><button class="danger" onclick="deleteLoan(${v.id})">🗑️ মুছো</button></div>
     </div>`;
   }).join("") : `<div class="empty">এখনো কোনো ধার-বাকি নেই</div>`;
+
+  // জমা (আমার কাছে রাখা টাকা)
+  const held = deposits.reduce((s, v) => s + (v.amount - v.returned), 0);
+  const given = deposits.reduce((s, v) => s + v.amount, 0);
+  const retTotal = deposits.reduce((s, v) => s + v.returned, 0);
+  document.getElementById("totalJoma").textContent = fmt(held);
+  document.getElementById("jomaTotals").innerHTML = `
+    <div class="brow"><span>আমার কাছে জমা আছে</span><b style="color:#1a5276">${fmt(held)}</b></div>
+    <div class="brow"><span>মোট জমা পড়েছে</span><b>${fmt(given)}</b></div>
+    <div class="brow"><span>ফেরত দেওয়া হয়েছে</span><b>${fmt(retTotal)}</b></div>`;
+
+  const jl = document.getElementById("jomaList");
+  jl.innerHTML = deposits.length ? deposits.map(v => {
+    const rem = v.amount - v.returned;
+    return `<div class="item">
+      <div class="top"><span>${v.person} — জমা</span>
+        <span class="amt" style="color:#1a5276">${fmt(rem)} আছে</span></div>
+      <div class="meta">মোট ${fmt(v.amount)} · ফেরত ${fmt(v.returned)} · ${v.date}</div>
+      ${v.note ? `<div class="note">${v.note}</div>` : ""}
+      ${rem > 0 ? `<div class="paybox">
+        <input type="number" id="ret-${v.id}" placeholder="ফেরতের টাকা" min="1">
+        <button onclick="addReturn(${v.id})">ফেরত দিলাম</button>
+      </div>` : `<div class="note" style="color:#1e7d32;font-weight:600">✅ সম্পূর্ণ ফেরত দেওয়া হয়েছে</div>`}
+      <div class="actions"><button class="danger" onclick="deleteDeposit(${v.id})">🗑️ মুছো</button></div>
+    </div>`;
+  }).join("") : `<div class="empty">এখনো কারো টাকা জমা নেই</div>`;
 }
 render();
 </script>
