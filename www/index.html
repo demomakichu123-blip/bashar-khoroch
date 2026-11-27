@@ -56,15 +56,52 @@
   .seg button { flex: 1; padding: 9px; border: 1px solid #ccc; border-radius: 8px; background: #fff; font-size: 14px; cursor: pointer; }
   .seg button.on { background: #1e5631; color: #fff; border-color: #1e5631; }
   .hidden { display: none; }
+  .headrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  #profileBtn { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.15); border: none; border-radius: 24px; padding: 6px 12px 6px 6px; color: #fff; cursor: pointer; }
+  #profileAvatar { width: 38px; height: 38px; border-radius: 50%; background: #fff; color: #1e5631; font-weight: 700; font-size: 18px; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+  #profileAvatar img { width: 100%; height: 100%; object-fit: cover; }
+  #profileName { font-size: 15px; font-weight: 600; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #profileView { position: fixed; inset: 0; background: #f4f6f3; z-index: 20; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  #profileView .pcard { background: #fff; border-radius: 16px; padding: 24px 20px; width: 100%; max-width: 360px; box-shadow: 0 2px 12px rgba(0,0,0,.12); text-align: center; }
+  #profileView h2 { font-size: 19px; margin: 0 0 6px; }
+  #profileView p { font-size: 14px; color: #666; margin-bottom: 16px; }
+  #profilePreview { width: 96px; height: 96px; border-radius: 50%; background: #e3e8e3; color: #1e5631; font-size: 40px; font-weight: 700; display: flex; align-items: center; justify-content: center; overflow: hidden; margin: 0 auto 12px; }
+  #profilePreview img { width: 100%; height: 100%; object-fit: cover; }
+  #profileView input[type="text"] { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 9px; font-size: 16px; margin-bottom: 10px; }
+  #profileView input[type="file"] { display: none; }
+  .photobtn { display: inline-block; padding: 9px 16px; background: #eef2ee; border-radius: 8px; font-size: 14px; cursor: pointer; margin-bottom: 12px; }
+  #profileView .savebtn { width: 100%; padding: 12px; border: none; border-radius: 9px; background: #1e5631; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; }
+  #profileView .cancelbtn { width: 100%; padding: 10px; border: none; background: none; color: #888; font-size: 14px; cursor: pointer; margin-top: 6px; }
 </style>
 </head>
 <body>
 <header>
-  <div class="wrap">
-    <h1>🏠 বাসার খরচ</h1>
-    <p>বাজার, খাওয়া, বুয়া, বিল — ধার-বাকি আর জমার হিসাব</p>
+  <div class="wrap headrow">
+    <div>
+      <h1>🏠 বাসার খরচ</h1>
+      <p>বাজার, খাওয়া, বুয়া, বিল — ধার-বাকি আর জমার হিসাব</p>
+    </div>
+    <button id="profileBtn" onclick="showProfileForm(true)" title="প্রোফাইল বদলাও">
+      <span id="profileAvatar"><span>?</span></span>
+      <span id="profileName"></span>
+    </button>
   </div>
 </header>
+
+<!-- ======= প্রোফাইল (প্রথমবার নাম + ছবি) ======= -->
+<div id="profileView" class="hidden">
+  <div class="pcard">
+    <div id="profilePreview">?</div>
+    <h2 id="profileTitle">তোমার নাম লেখো</h2>
+    <p>এই নামটাই অ্যাপের ভেতরে দেখাবে। ছবি দিলে তোমার ছবি দেখাবে।</p>
+    <input type="text" id="profileNameInput" placeholder="তোমার নাম" maxlength="30">
+    <label class="photobtn" for="profilePhotoInput">📷 ছবি বসাও</label>
+    <input type="file" id="profilePhotoInput" accept="image/*" onchange="pickProfilePhoto(event)">
+    <button type="button" class="savebtn" onclick="saveProfile()">শুরু করো</button>
+    <button type="button" class="cancelbtn hidden" id="profileCancel" onclick="hideProfileForm()">বাতিল</button>
+    <button type="button" class="cancelbtn hidden" id="profileRemovePhoto" onclick="removeProfilePhoto()">ছবি মুছে ফেলো</button>
+  </div>
+</div>
 
 <div class="wrap">
   <div class="summary">
@@ -158,6 +195,8 @@ const CATS = ["বাজার","খাওয়া-দাওয়া","বু�
 let expenses = JSON.parse(localStorage.getItem("bk_expenses") || "[]");
 let loans = JSON.parse(localStorage.getItem("bk_loans") || "[]");
 let deposits = JSON.parse(localStorage.getItem("bk_joma") || "[]");
+let profile = JSON.parse(localStorage.getItem("bk_profile") || "null");
+let profilePhotoData = null; // নতুন ছবি (সেভ না হওয়া পর্যন্ত)
 let loanType = "pabo";
 let editingExp = null;
 
@@ -168,6 +207,7 @@ const thisMonth = () => today().slice(0, 7);
 document.getElementById("expDate").value = today();
 document.getElementById("loanDate").value = today();
 document.getElementById("jomaDate").value = today();
+if (profile && profile.name) { updateProfileUI(); } else { showProfileForm(false); }
 document.getElementById("monthPicker").value = thisMonth();
 document.getElementById("monthPicker").addEventListener("change", render);
 
@@ -175,6 +215,7 @@ function persist() {
   localStorage.setItem("bk_expenses", JSON.stringify(expenses));
   localStorage.setItem("bk_loans", JSON.stringify(loans));
   localStorage.setItem("bk_joma", JSON.stringify(deposits));
+  localStorage.setItem("bk_profile", JSON.stringify(profile));
 }
 
 function showTab(t) {
@@ -293,6 +334,76 @@ function deleteDeposit(id) {
   if (!confirm("এই জমার হিসাবটা মুছে ফেলবো?")) return;
   deposits = deposits.filter(v => v.id !== id);
   persist(); render();
+}
+
+/* ---------- প্রোফাইল (নাম + ছবি) ---------- */
+function updateProfileUI() {
+  const av = document.getElementById("profileAvatar");
+  const pv = document.getElementById("profilePreview");
+  if (profile && profile.photo) {
+    av.innerHTML = `<img src="${profile.photo}" alt="">`;
+    pv.innerHTML = `<img src="${profile.photo}" alt="">`;
+  } else if (profile && profile.name) {
+    const ch = profile.name.trim().charAt(0);
+    av.innerHTML = `<span>${ch}</span>`;
+    pv.textContent = ch;
+  } else {
+    av.innerHTML = `<span>?</span>`;
+    pv.textContent = "?";
+  }
+  document.getElementById("profileName").textContent = (profile && profile.name) || "";
+  document.getElementById("profileRemovePhoto").classList.toggle("hidden", !(profile && profile.photo));
+}
+function showProfileForm(editing) {
+  document.getElementById("profileTitle").textContent = editing ? "প্রোফাইল বদলাও" : "তোমার নাম লেখো";
+  document.getElementById("profileNameInput").value = (profile && profile.name) || "";
+  document.querySelector("#profileView .savebtn").textContent = editing ? "সেভ করো" : "শুরু করো";
+  document.getElementById("profileCancel").classList.toggle("hidden", !editing);
+  profilePhotoData = null;
+  updateProfileUI();
+  document.getElementById("profileView").classList.remove("hidden");
+}
+function hideProfileForm() {
+  document.getElementById("profileView").classList.add("hidden");
+}
+function pickProfilePhoto(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const S = 200;
+      const scale = Math.min(1, S / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(img.width * scale));
+      c.height = Math.max(1, Math.round(img.height * scale));
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      profilePhotoData = c.toDataURL("image/jpeg", 0.75);
+      document.getElementById("profilePreview").innerHTML = `<img src="${profilePhotoData}" alt="">`;
+      document.getElementById("profileRemovePhoto").classList.remove("hidden");
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+function removeProfilePhoto() {
+  profilePhotoData = "__REMOVE__";
+  document.getElementById("profilePreview").textContent = "?";
+  document.getElementById("profileRemovePhoto").classList.add("hidden");
+  document.getElementById("profilePhotoInput").value = "";
+}
+function saveProfile() {
+  const name = document.getElementById("profileNameInput").value.trim();
+  if (!name) { alert("নাম লেখো"); return; }
+  if (!profile) profile = {};
+  profile.name = name;
+  if (profilePhotoData === "__REMOVE__") profile.photo = "";
+  else if (profilePhotoData) profile.photo = profilePhotoData;
+  profilePhotoData = null;
+  persist();
+  updateProfileUI();
+  hideProfileForm();
 }
 
 /* ---------- রেন্ডার ---------- */
